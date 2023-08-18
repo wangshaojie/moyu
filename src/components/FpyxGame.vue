@@ -1,97 +1,136 @@
 <template>
-	<div class="matrix">
-		<div v-for="(row, rowIndex) in matrix" :key="rowIndex">
-        <div v-for="(num, columnIndex) in row" :key="columnIndex" class="cell">{{ num }}</div>
-      </div>
+	<div class="container">
+		<div class="matrix grid-container">
+			<div v-for="(row, idx) in matrix" :key="row" class="grid-item" @click="toggle(idx)">
+				<div :class="{ card: true, checked: activeIndexs.includes(idx) }">
+					<div class="front">
+					</div>
+					<div class="back">{{ row }}</div>
+				</div>
+			</div>
+		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-const matrix = ref([
-  [1, 2, 3],
-  [4, 5, 6],
-  [7, 8, 9]
-])
+const matrix = ref<number[]>([])
 
-/**
- * 生成成对数字的二维数组
- * @param rows 行数
- * @param columns 列数
- * @param min 随机数的最小值
- * @param max 随机数的最大值
- * @return {number[][]} - 生成的二维数组。
- */
-const generatePairedMatrix = (rows: number, columns: number, min: number, max: number): number[][] => {
-  // 计算矩阵中总数字个数
-  const totalNumbers = rows * columns;
-  // 计算总数字个数的一半
-  const halfTotalNumbers = totalNumbers / 2;
-  // 生成包含一半数字的数组
-  const numbers = Array.from({ length: halfTotalNumbers }, (_, index) => index + min);
-  // 将数字数组复制一遍，并进行随机打乱
-  const shuffledNumbers = shuffleArray(numbers.concat(numbers));
-  
-  // 创建一个空矩阵
-  const matrix: number[][] = [];
-  let count = 0;
-  // 逐行生成矩阵
-  for (let i = 0; i < rows; i++) {
-    const row: number[] = [];
-    // 逐列生成矩阵元素，并使用已打乱的数字填充
-    for (let j = 0; j < columns; j++) {
-      row.push(shuffledNumbers[count]);
-      count++;
-    }
-    
-    // 将行添加到矩阵中
-    matrix.push(row);
+const generateRandomPairs = (n: number) => {
+  const numbers = [];
+
+  for (let i = 1; i <= n; i++) {
+    numbers.push(i, i);
   }
-  
-  // 返回生成的矩阵
-  return matrix;
-}
 
-/**
- * shuffleArray 函数用来打乱一个数组的元素顺序。
- *
- * @param {T[]} array - 需要打乱的数组。
- * @return {T[]} - 打乱顺序后的新数组。
- *
- * 实现思路:
- * 1. 先复制一份原数组，以避免修改原数组。
- * 2. 从新数组的最后一个元素开始，逐一与前面任意一个（包括自己）的元素交换位置。
- * 3. 这样可以保证每个元素都有可能出现在任何位置，实现了打乱顺序的效果。
- */
-const shuffleArray = <T>(array: T[]): T[] => {
-  const shuffledArray = array.slice();
-  
-  for (let i = shuffledArray.length - 1; i > 0; i--) {
+  // Fisher-Yates 洗牌算法
+  for (let i = numbers.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [shuffledArray[i], shuffledArray[j]] = [shuffledArray[j], shuffledArray[i]];
+    [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
   }
-  
-  return shuffledArray;
+
+  return numbers;
 }
 
-// 示例用法
-const pairedMatrix: number[][] = generatePairedMatrix(3, 4, 1, 6);
-matrix.value = pairedMatrix
+matrix.value = generateRandomPairs(5)
+console.log(matrix.value);
 
+const prevIndex = ref() // 前一个的索引
+
+const activeIndexs = ref<number[]>([])
+const toggle = (index: number) => {
+  let timer: NodeJS.Timeout[] = []
+
+  // 保存前一个点击的索引
+  prevIndex.value = activeIndexs.value[activeIndexs.value.length - 1]
+  
+  if (activeIndexs.value.includes(index)) {
+    alert(1)
+    activeIndexs.value = activeIndexs.value.filter(i => i !== index)
+
+  } else {
+    activeIndexs.value.push(index)
+
+    timer[index] = setTimeout(() => {
+      activeIndexs.value = activeIndexs.value.filter(i => i !== index)
+    }, 1000);
+  }
+
+  
+}
 </script>
 
 <style lang="scss" scoped>
-.matrix {
-  display: flex;
-  flex-wrap: wrap;
+.container {
+	height: 100vh;
+	background-color: #f17563;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }
-.cell {
-  width: 50px;
-  height: 50px;
-  border: 1px solid black;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: -1px 0 0 -1px;
+.matrix {
+	display: flex;
+}
+
+.grid-container {
+	display: grid;
+  
+	grid-template-columns: repeat(5, 68px); /* 创建 3 列 */
+	grid-template-rows: repeat(5, 100px); /* 创建 3 行 */
+	gap: 0px; /* 格子之间的间隙 */
+}
+
+.grid-item {
+	background-color: #f0f0f0; /* 格子的背景色 */
+	border: 1px solid #000; /* 格子的边框样式 */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 20px;
+  height: 100px;
+	cursor: pointer;
+
+	.card {
+		position: relative;
+		height: 100%;
+		width: 100%;
+		-webkit-transform-style: preserve-3d;
+		transform-style: preserve-3d;
+		-webkit-transition: all 600ms;
+		transition: all 600ms;
+		z-index: 20;
+
+		div {
+			position: absolute;
+			height: 100%;
+			width: 100%;
+			color: #f17563;
+			text-align: center;
+			line-height: 40px;
+			-webkit-backface-visibility: hidden;
+			backface-visibility: hidden;
+			border-radius: 2px;
+		}
+
+		.back {
+			background: #222;
+			color: #fff;
+			-webkit-transform: rotateY(180deg);
+			transform: rotateY(180deg);
+		}
+	}
+
+  .front {
+    // width: 50px;
+    // height: 100px;
+    background-image: url('../assets/preview.png');
+    background-size: contain;
+  }
+
+	.checked {
+		transform: rotateY(180deg);
+		-webkit-transform: rotateY(180deg);
+		box-shadow: 0 20px 20px rgba(255, 255, 255, 0.2);
+	}
 }
 </style>
